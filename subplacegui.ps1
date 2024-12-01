@@ -143,7 +143,7 @@ $setPlaceIdButton.Add_Click({
 
 $saveSettingsButton.Add_Click({
 	$savedMessageText.Visibility = "Visible"
-	$savedMessageText.BeginAnimation([Windows.UIElement]::OpacityProperty, $null) # Clear any existing animations
+	$savedMessageText.BeginAnimation([Windows.UIElement]::OpacityProperty, $null)
 	$savedMessageText.Opacity = 1.0
 	$script:timer = New-Object System.Windows.Threading.DispatcherTimer
 	$timer.Interval = [TimeSpan]::FromSeconds(0.5)
@@ -152,7 +152,7 @@ $saveSettingsButton.Add_Click({
 		$timer.Stop()
 	})
 	$timer.Start()
-	# SaveSettings "delay", "loopDelay", "sudoMode", "version"
+	SaveSettings "delay", "loopDelay", "sudoMode", "version"
 })
 
 $placesGrid.Add_MouseDoubleClick({
