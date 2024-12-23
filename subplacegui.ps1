@@ -225,7 +225,7 @@ LoadSettings
 function Join {
 	$statusDot.Foreground = [System.Windows.Media.Brushes]::Red
 	$statusText.Text      = " Do not click on retry yet."
-	if (-not ($skipPrejoining.Checked)) {
+	if (-not ($skipPrejoining.IsChecked)) {
 		if ($sudoMode) {
 			gsudo --integrity medium Start-Process "roblox://experiences/start?placeId=$rootId"
 		} else {
