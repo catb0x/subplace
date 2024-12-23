@@ -1,10 +1,10 @@
 <#
 subplacegui.ps1
-by kit, version 1.1
+by kit, version 1.1.1
 subject to the terms of the MPL 2.0, you can get a copy at http://mozilla.org/MPL/2.0/
 #>
 
-$version  = "1.1"
+$version  = "1.1.1"
 $jsonPath = "$env:LOCALAPPDATA\subplace\gui\settings.json"
 Add-Type -AssemblyName PresentationFramework
 
@@ -66,7 +66,7 @@ $xaml = @"
 		</TabItem>
 		<TabItem Header="Info">
 			<StackPanel Margin="10">
-				<TextBlock Margin="0,0,0,5">subplacegui 1.1 by Kit</TextBlock>
+				<TextBlock Margin="0,0,0,5">subplacegui 1.1.1 by Kit</TextBlock>
 				<TextBlock Margin="0,0,0,5"><Hyperlink x:Name="GithubLink" NavigateUri="https://github.com/catb0x/subplace">Github</Hyperlink></TextBlock>
 				<TextBlock Margin="0,0,0,5" Foreground="Gray">stan loona :3</TextBlock>
     				<TextBlock Margin="0,0,0,5" Foreground="Gray">rgc was here</TextBlock>
