@@ -1,10 +1,10 @@
 <#
-subplacegui.ps1
-by kit, version 1.1.1
+subplacegui.ps1 version 1.2
+made by kit ^_^ https://vyz.ee/
 subject to the terms of the MPL 2.0, you can get a copy at http://mozilla.org/MPL/2.0/
 #>
 
-$version  = "1.1.1"
+$version  = "1.2"
 $jsonPath = "$env:LOCALAPPDATA\subplace\gui\settings.json"
 Add-Type -AssemblyName PresentationFramework
 
@@ -20,10 +20,18 @@ $xaml = @"
 					<RowDefinition Height="*"/>
 					<RowDefinition Height="Auto"/>
 				</Grid.RowDefinitions>
-				<StackPanel Orientation="Horizontal" Margin="10">
-					<TextBox x:Name="PlaceIdInput" Width="150" Margin="0,0,10,0"/>
-					<Button Content="Set PlaceId" x:Name="SetPlaceIdButton"/>
-				</StackPanel>
+				<Grid Margin="10">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="Auto" />
+						<ColumnDefinition Width="Auto" />
+						<ColumnDefinition Width="Auto" />
+						<ColumnDefinition Width="*" />
+					</Grid.ColumnDefinitions>
+					<TextBox x:Name="PlaceIdInput" Width="150" Margin="0,0,10,0" Grid.Column="0"/>
+					<Button Content="Load PlaceID" Margin="0,0,10,0" x:Name="LoadPlaceIdButton" Grid.Column="1"/>
+					<TextBlock Grid.Column="2" Margin="0,2,10,0">JobID:</TextBlock>
+					<TextBox x:Name="JobIdInput" HorizontalAlignment="Stretch" Grid.Column="3"/>
+				</Grid>
 				<DataGrid x:Name="PlacesGrid" Grid.Row="1" AutoGenerateColumns="False" Margin="10" IsReadOnly="True" HeadersVisibility="Column" VirtualizingPanel.ScrollUnit="Pixel">
 					<DataGrid.Columns>
 						<DataGridTextColumn Header="Name" Binding="{Binding name}" Width="*"/>
@@ -31,8 +39,8 @@ $xaml = @"
 					</DataGrid.Columns>
 				</DataGrid>
 				<StackPanel Grid.Row="2" Margin="10,0,10,10" Orientation="Horizontal">
-					<TextBlock x:Name="StatusDot" Foreground="Gray" FontFamily="Segoe UI Symbol Regular">&#x26AB;</TextBlock>
-					<TextBlock x:Name="StatusText">&#x2002;Joining process hasn't begun yet.</TextBlock>
+					<TextBlock x:Name="StatusDot" Foreground="Gray" FontFamily="Segoe UI Symbol Regular">&#x26AB;&#x2002;</TextBlock>
+					<TextBlock x:Name="StatusText">Joining process hasn't begun yet.</TextBlock>
 				</StackPanel>
 			</Grid>
 		</TabItem>
@@ -44,7 +52,7 @@ $xaml = @"
 					<RowDefinition Height="Auto"/>
 				</Grid.RowDefinitions>
 				<StackPanel Margin="0" Grid.Row="0">
-					<StackPanel Orientation="Horizontal" Margin="-5,0,0,0">
+					<StackPanel Orientation="Horizontal" Margin="-5,0,0,0" x:Name="DelayStack" Visibility="Collapsed">
 						<Label Content="Delay:" Target="{Binding ElementName=Delay}"/>
 						<TextBox x:Name="Delay" Text="750" HorizontalAlignment="Left" Width="150" Height="18"/>
 					</StackPanel>
@@ -54,8 +62,10 @@ $xaml = @"
 					</StackPanel>
 					<CheckBox x:Name="SudoMode" Content="Enable sudo mode" Margin="0,0,0,10"/>
 					<CheckBox x:Name="SkipPrejoining" Content="Skip pre-joining" Margin="0,0,0,10"/>
+					<CheckBox x:Name="ManualMode" Content="Manual Mode" Margin="0,0,0,10"/>
+					<CheckBox x:Name="VerboseMode" Content="Verbose Mode" Margin="0,0,0,10"/>
 				</StackPanel>
-					<TextBlock x:Name="SavedMessage" Text="Settings Saved" Foreground="Green" Margin="0,-10,0,10" Grid.Row="2" Visibility="Hidden"/>
+				<TextBlock x:Name="SavedMessage" Text="Settings Saved" Foreground="Green" Margin="0,-10,0,10" Grid.Row="2" Visibility="Hidden"/>
 				<Button Content="Save Settings" 
 					VerticalAlignment="Bottom" 
 					HorizontalAlignment="Stretch" 
@@ -65,12 +75,23 @@ $xaml = @"
 			</Grid>
 		</TabItem>
 		<TabItem Header="Info">
-			<StackPanel Margin="10">
-				<TextBlock Margin="0,0,0,5">subplacegui 1.1.1 by Kit</TextBlock>
+		<Grid Margin="10">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="*"/>
+			</Grid.RowDefinitions>
+			<StackPanel Grid.Row="0">
+				<TextBlock Margin="0,0,0,5">subplacegui 1.2 by kit</TextBlock>
 				<TextBlock Margin="0,0,0,5"><Hyperlink x:Name="GithubLink" NavigateUri="https://github.com/catb0x/subplace">Github</Hyperlink></TextBlock>
-				<TextBlock Margin="0,0,0,5" Foreground="Gray">stan loona :3</TextBlock>
-    				<TextBlock Margin="0,0,0,5" Foreground="Gray">rgc was here</TextBlock>
+				<TextBlock Margin="0,0,0,5" Foreground="Gray">rgc was here ^_^ stan loona :3</TextBlock>
+				<TextBlock Margin="0,0,0,5" Foreground="Gray">thanks to <Hyperlink x:Name="ReturnLink" NavigateUri="https://github.com/returnrqt">return</Hyperlink> for helping me with this</TextBlock>
 			</StackPanel>
+			<Image HorizontalAlignment="Stretch" 
+				Source="https://i.pinimg.com/originals/d8/13/03/d81303b0eacb154411c932e92b2b75a3.jpg"
+				Stretch="Uniform"
+				VerticalAlignment="Bottom"
+				Grid.Row="1"/>
+		</Grid>
 		</TabItem>
 	</TabControl>
 </Window>
@@ -79,18 +100,32 @@ $xaml = @"
 $reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($xaml))
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
-$placeIdInput       = $window.FindName("PlaceIdInput")
-$setPlaceIdButton   = $window.FindName("SetPlaceIdButton")
-$placesGrid         = $window.FindName("PlacesGrid")
-$delayInput         = $window.FindName("Delay")
-$loopDelayInput     = $window.FindName("LoopDelay")
-$sudoModeCheckbox   = $window.FindName("SudoMode")
-$saveSettingsButton = $window.FindName("SaveSettingsButton")
-$savedMessageText   = $window.FindName("SavedMessage")
-$skipPrejoining     = $window.FindName("SkipPrejoining")
-$statusText         = $window.FindName("StatusText")
-$statusDot          = $window.FindName("StatusDot")
-$githubLink         = $window.FindName("GithubLink")
+$mainTabControl         = $window.FindName("MainTabControl")
+$placeIdInput           = $window.FindName("PlaceIdInput")
+$jobIdInput             = $window.FindName("JobIdInput")
+$loadPlaceIdButton      = $window.FindName("LoadPlaceIdButton")
+$placesGrid             = $window.FindName("PlacesGrid")
+$delayStack             = $window.FindName("DelayStack")
+$delayInput             = $window.FindName("Delay")
+$loopDelayInput         = $window.FindName("LoopDelay")
+$sudoModeCheckbox       = $window.FindName("SudoMode")
+$saveSettingsButton     = $window.FindName("SaveSettingsButton")
+$savedMessageText       = $window.FindName("SavedMessage")
+$skipPrejoiningCheckbox = $window.FindName("SkipPrejoining")
+$manualModeCheckbox     = $window.FindName("ManualMode")
+$verboseModeCheckbox    = $window.FindName("VerboseMode")
+$statusText             = $window.FindName("StatusText")
+$statusDot              = $window.FindName("StatusDot")
+$githubLink             = $window.FindName("GithubLink")
+$returnLink             = $window.FindName("ReturnLink")
+
+foreach ($element in @($githubLink, $returnLink)) {
+	if ($element -ne $null) {
+		$element.Add_Click({
+			Start-Process $this.NavigateUri.AbsoluteUri
+		})
+	}
+}
 
 $fadeOut = New-Object Windows.Media.Animation.DoubleAnimation
 $fadeOut.From = 1.0
@@ -100,12 +135,40 @@ $fadeOut.Duration = [System.Windows.Duration]::new([System.TimeSpan]::FromSecond
 if (!([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
 	Start-Process powershell -ArgumentList "-NoExit", "-noprofile", "-executionpolicy bypass", "-file `"$PSCommandPath`"" -Verb RunAs
 	exit
-} elseif (!(Get-Command "gsudo" -ErrorAction SilentlyContinue)) {
+}
+if (!(Get-Command "gsudo" -ErrorAction SilentlyContinue)) {
 	$sudoModeCheckbox.Visibility = [System.Windows.Visibility]::Collapsed
 }
 
-$githubLink.Add_Click({
-	Start-Process $this.NavigateUri.AbsoluteUri
+$sudoModeCheckBox.Add_Checked({ $script:sudoMode = $true })
+$sudoModeCheckBox.Add_Unchecked({ $script:sudoMode = $false })
+$skipPrejoiningCheckbox.Add_Checked({ $script:skipPrejoining = $true })
+$skipPrejoiningCheckbox.Add_Unchecked({ $script:skipPrejoining = $false })
+$verboseModeCheckbox.Add_Checked({ $script:VerbosePreference = "Continue" })
+$verboseModeCheckbox.Add_Unchecked({ $script:VerbosePreference = "SilentlyContinue" })
+$manualModeCheckbox.Add_Checked({
+	$script:manualMode = $true
+	$delayStack.Visibility = [System.Windows.Visibility]::Visible
+})
+$manualModeCheckbox.Add_Unchecked({
+	$script:manualMode = $false
+	$delayStack.Visibility = [System.Windows.Visibility]::Collapsed
+})
+
+$jobIdInput.add_PreviewTextInput({
+	param($sender, $e)
+	if (-not [regex]::IsMatch($e.Text, '^[a-z0-9-]*$')) {
+		$e.Handled = $true
+	}
+})
+
+$jobIdInput.Add_TextChanged({
+	if ($jobIdInput.Text -ne "") {
+		$script:jobIdString = "&gameInstanceId=$($jobIdInput.Text)"
+		Write-Host $jobIdString
+	} else {
+		$script:jobIdString = ""
+	}
 })
 
 $NumberValidationTextBox = {
@@ -129,7 +192,7 @@ $loopDelayInput.Add_TextChanged({
 	}
 })
 
-$setPlaceIdButton.Add_Click({
+$loadPlaceIdButton.Add_Click({
 	$placeId = $placeIdInput.Text
 	if (-not [string]::IsNullOrEmpty($placeId)) {
 		try {
@@ -171,7 +234,7 @@ $saveSettingsButton.Add_Click({
 		$timer.Stop()
 	})
 	$timer.Start()
-	SaveSettings "delay", "loopDelay", "sudoMode", "version"
+	SaveSettings "delay", "loopDelay", "sudoMode", "version", "skipPrejoining", "manualMode", "VerbosePreference"
 })
 
 $placesGrid.Add_MouseDoubleClick({
@@ -179,14 +242,6 @@ $placesGrid.Add_MouseDoubleClick({
 		$script:subplace = $placesGrid.SelectedItem.id
 		Join
 	}
-})
-
-$sudoModeCheckBox.Add_Checked({
-	$script:sudoMode = $true
-})
-
-$sudoModeCheckBox.Add_Unchecked({
-	$script:sudoMode = $false
 })
 
 function SaveSettings {
@@ -208,64 +263,100 @@ function LoadSettings {
 	if ((Test-Path $jsonPath) -and !($reset)) {
 		$varHash = Get-Content $jsonPath | ConvertFrom-Json
 		foreach ($key in $varHash.PSObject.Properties.Name) {
-			Set-Variable -Name $key -Value $varHash.$key -Scope Script -Force
+			if ($key -ne "version") { Set-Variable -Name $key -Value $varHash.$key -Scope Script -Force
+			} else { Set-Variable -Name "settingsVersion" -Value $varHash.$key -Scope Script -Force }
 		}
 	} else {
-		$script:delay     = 750
-		$script:loopDelay = 300
-		$script:sudoMode  = $false
-		SaveSettings "delay", "loopDelay", "sudoMode", "version"
+		$script:delay          = 750
+		$script:loopDelay      = 300
+		$script:sudoMode       = $false
+		$script:skipPrejoining = $false
+		$script:manualMode     = $false
+		SaveSettings "delay", "loopDelay", "sudoMode", "version", "skipPrejoining", "manualMode", "VerbosePreference"
 	}
-	$script:delayInput.Text            = $delay
-	$script:loopDelayInput.Text        = $loopDelay
-	$script:sudoModeCheckbox.IsChecked = $sudoMode
+	$script:delayInput.Text                  = $delay
+	$script:loopDelayInput.Text              = $loopDelay
+	$script:sudoModeCheckBox.IsChecked       = $sudomode
+	$script:skipPrejoiningCheckbox.IsChecked = $skipPrejoining
+	$script:manualModeCheckbox.IsChecked     = $manualMode
+	if ($VerbosePreference -eq "Continue") { $script:verboseModeCheckbox.IsChecked = $true }
 }
 LoadSettings
 
 function Join {
-	$statusDot.Foreground = [System.Windows.Media.Brushes]::Red
-	$statusText.Text      = " Do not click on retry yet."
-	if (-not ($skipPrejoining.IsChecked)) {
+	$statusText.Text      = "Joining..."
+	if (-not ($skipPrejoining)) {
 		if ($sudoMode) {
 			gsudo --integrity medium Start-Process "roblox://experiences/start?placeId=$rootId"
 		} else {
 			Start-Process "roblox://experiences/start?placeId=$rootId"
 		}
+		Write-Verbose "Pre-joining roblox://experiences/start?placeId=$rootId"
 		while (-not (WindowInForeground "Roblox")) {
 			Start-Sleep -Milliseconds $loopDelay
 		}
 		$process     = WindowInForeground "Roblox"
 		$processPath = (Get-Process -Id $process.Id).Path
 		$processName = [System.IO.Path]::GetFileNameWithoutExtension($processPath)
-		Start-Sleep -Milliseconds $delay
+		if ($manualMode) {
+			Start-Sleep -Milliseconds $delay
+			Write-Verbose "Closing roblox..."
+		} else {
+			WaitForLogs "UgcExperienceController: initialize:"
+			Write-Verbose '"UgcExperienceController:" initialize: found in logs. Closing roblox...'
+		}
 		Stop-Process -Name $processName
 	}
 	if ($sudoMode) {
-		gsudo --integrity medium Start-Process "roblox://experiences/start?placeId=$subplace"
+		gsudo --integrity medium Start-Process "roblox://experiences/start?placeId=$subplace${jobIdString}"
 	} else {
-		Start-Process "roblox://experiences/start?placeId=$subplace"
+		Start-Process "roblox://experiences/start?placeId=$subplace${jobIdString}"
 	}
+	Write-Verbose "Joining roblox://experiences/start?placeId=$subplace${jobIdString}"
 	while (-not (WindowInForeground "Roblox")) {
 		Start-Sleep -Milliseconds $loopDelay
 	}
+	Write-Verbose "Roblox found. Blocking internet..."
 	BlockInternet $processPath
-	Start-Sleep -Milliseconds $delay
+	$statusDot.Foreground = [System.Windows.Media.Brushes]::Red
+	$statusText.Text      = "Disconnected. Do not click on retry yet."
+	if ($manualMode) {
+		Start-Sleep -Milliseconds $delay
+		Write-Verbose "Unblocking internet..."
+	} else {
+		WaitForLogs "Game join failed."
+		Write-Verbose '"Game join failed." found in logs. Unblocking internet...'
+	}
 	UnblockInternet $processPath
 	$statusDot.Foreground = [System.Windows.Media.Brushes]::Green
-	$statusText.Text = " You can click on retry now."
+	$statusText.Text = "Connected. You can click on retry now."
 	$script:timer = New-Object System.Windows.Threading.DispatcherTimer
 	$timer.Interval = [TimeSpan]::FromSeconds(5)
 	$timer.Add_Tick({
 		$statusDot.Foreground = [System.Windows.Media.Brushes]::Gray
-		$statusText.Text = " Joining process hasn't begun yet."
+		$statusText.Text = "Joining process hasn't begun yet."
 		$timer.Stop()
 	})
-$timer.Start()
+	$timer.Start()
 }
 
 function WindowInForeground {
 	param ($windowName)
-	return Get-Process | Where-Object { $_.MainWindowTitle -like $windowName }
+	return Get-Process | Where-Object { $_.MainWindowTitle -match "^$windowName(?:\s\(Internal\))?$" }
+}
+
+function WaitForLogs {
+	param ( [string]$searchString )
+	$folderPath = "$env:LOCALAPPDATA\Roblox\logs"
+	$stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+	$timeout = 10
+	while ($stopwatch.Elapsed.TotalSeconds -lt $timeout) {
+		$file = Get-ChildItem $folderPath -File | Sort-Object -Descending -Property LastWriteTime | Select-Object -First 1
+		if ($file -and (Select-String -Path $file.FullName -Pattern $searchString -SimpleMatch)) {
+			return 
+		}
+		Start-Sleep -Milliseconds $LoopDelay
+	}
 }
 
 function BlockInternet {
