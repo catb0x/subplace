@@ -6,7 +6,7 @@ powershell gui that lets you join hidden roblox subplaces easily
 
 ## requirements
 
-1. powershell
+1. powershell (prefferably v7)
 2. bloxstrap/fishstrap/any bootstrapper but the official one
 
 ## how to use it
